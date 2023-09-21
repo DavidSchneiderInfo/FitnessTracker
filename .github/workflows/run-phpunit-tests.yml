@@ -1,0 +1,19 @@
+name: Run PHPUnit Tests
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+  push:
+    branches:
+      - main
+      - devwq
+jobs:
+  phpunit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Start the stack
+        run: make local/setup
+      - name: Run PHPUnit tests
+        run: make phpunit

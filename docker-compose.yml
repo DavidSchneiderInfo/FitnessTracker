@@ -1,0 +1,132 @@
+version: '3.9'
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - '${APP_PORT:-80}:80'
+      - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
+    volumes:
+      - '.:/var/www/html'
+      - './docker/nginx/server.conf:/etc/nginx/conf.d/default.conf'
+    networks:
+      - 'appbuild'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    depends_on:
+      - php-fpm
+  php-fpm:
+    image: dsinfo/php:8-fpm
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    volumes:
+      - .:/var/www/html
+    networks:
+      - 'appbuild'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    depends_on:
+      - mysql
+      - redis
+      #- meilisearch
+      #- mailpit
+      #- selenium
+  mysql:
+    image: 'mysql/mysql-server:8.0'
+    ports:
+      - '${FORWARD_DB_PORT:-13306}:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    volumes:
+      - 'appbuild-mysql:/var/lib/mysql'
+      #- './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
+    networks:
+      - 'appbuild'
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - '-p${DB_PASSWORD}'
+      retries: 3
+      timeout: 5s
+  redis:
+    image: 'redis:alpine'
+    ports:
+      - '${FORWARD_REDIS_PORT:-16379}:6379'
+    volumes:
+      - 'appbuild-redis:/data'
+    networks:
+      - 'appbuild'
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      retries: 3
+      timeout: 5s
+  meilisearch:
+    image: 'getmeili/meilisearch:latest'
+    ports:
+      - '${FORWARD_MEILISEARCH_PORT:-7700}:7700'
+    volumes:
+      - 'appbuild-meilisearch:/meili_data'
+    networks:
+      - 'appbuild'
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - '--no-verbose'
+        - '--spider'
+        - 'http://localhost:7700/health'
+      retries: 3
+      timeout: 5s
+  mailpit:
+    image: 'axllent/mailpit:latest'
+    ports:
+      - '${FORWARD_MAILPIT_PORT:-11025}:1025'
+      - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+    networks:
+      - 'appbuild'
+  selenium:
+    image: seleniarm/standalone-chromium
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - '/dev/shm:/dev/shm'
+    networks:
+      - 'appbuild'
+  composer:
+    image: composer/composer
+    init: false
+    volumes:
+      - ".:/composer"
+    container_name: composer
+    working_dir: /composer
+    command: composer install
+  node:
+    image: node:latest
+    init: false
+    volumes:
+      - ".:/node"
+    container_name: node
+    working_dir: /node
+    command: npm install
+networks:
+  appbuild:
+    driver: bridge
+volumes:
+  appbuild-mysql:
+    driver: local
+  appbuild-redis:
+    driver: local
+  appbuild-meilisearch:
+    driver: local
+
