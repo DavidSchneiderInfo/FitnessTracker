@@ -108,7 +108,6 @@ services:
     init: false
     volumes:
       - ".:/composer"
-    container_name: composer
     working_dir: /composer
     command: composer install
   node:
@@ -116,7 +115,6 @@ services:
     init: false
     volumes:
       - ".:/node"
-    container_name: node
     working_dir: /node
     command: npm install
 networks:
