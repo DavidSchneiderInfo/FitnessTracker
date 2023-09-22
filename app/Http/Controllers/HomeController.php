@@ -2,6 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Reports\Actions\GetOrCreateReportForUser;
+use App\Reports\DTOs\GetOrCreateReport;
+use App\Reports\ValueObjects\DateString;
+use Illuminate\Contracts\Auth\Guard;
+
 class HomeController extends Controller
 {
     /**
@@ -9,7 +15,7 @@ class HomeController extends Controller
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(private GetOrCreateReportForUser $getOrCreateReportForUser, private Guard $guard)
     {
         $this->middleware('auth');
     }
@@ -21,6 +27,17 @@ class HomeController extends Controller
      */
     public function index()
     {
-        return view('home');
+        /** @var User $user */
+        $user = $this->guard->user();
+
+        $report = $this->getOrCreateReportForUser->execute(
+            new GetOrCreateReport(
+                $user,
+                DateString::now()
+            )
+        );
+
+        return view('home')
+            ->with('report', $report);
     }
 }

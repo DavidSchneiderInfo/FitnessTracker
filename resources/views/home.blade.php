@@ -15,6 +15,8 @@
                     @endif
 
                     {{ __('You are logged in!') }}
+
+                    <pre>{{ var_dump($report->toArray()) }}</pre>
                 </div>
             </div>
         </div>

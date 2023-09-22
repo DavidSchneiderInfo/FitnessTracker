@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Providers\RouteServiceProvider;
+use App\Reports\Actions\GetOrCreateReportForUser;
+use App\Reports\DTOs\GetOrCreateReport;
+use App\Reports\ValueObjects\DateString;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -36,7 +39,7 @@ class RegisterController extends Controller
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(private GetOrCreateReportForUser $getOrCreateReportForUser)
     {
         $this->middleware('guest');
     }
@@ -62,10 +65,14 @@ class RegisterController extends Controller
      */
     protected function create(array $data)
     {
-        return User::create([
+        $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
+
+        $this->getOrCreateReportForUser->execute(new GetOrCreateReport($user, DateString::now()));
+
+        return $user;
     }
 }

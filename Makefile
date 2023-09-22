@@ -29,7 +29,7 @@ local/setup:
 	make node-build
 	make up
 	docker-compose exec -ti php-fpm php artisan key:generate
-	docker-compose exec -ti php-fpm php artisan migrate --seed
+	make migrate
 
 local/reset:
 	docker-compose down -v
@@ -39,6 +39,9 @@ mysql-cli:
 	include .env
 	export
 	docker-compose exec mysql mysql -u root -p${DB_PASSWORD} ${DB_DATABASE}
+
+migrate:
+	docker-compose exec -ti php-fpm php artisan migrate --seed
 
 # Testing
 phpunit: up

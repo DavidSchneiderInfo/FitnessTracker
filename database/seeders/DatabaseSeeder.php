@@ -2,8 +2,13 @@
 
 namespace Database\Seeders;
 
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
+use App\Reports\Actions\GetOrCreateReportForUser;
+use App\Reports\DTOs\GetOrCreateReport;
+use App\Reports\ValueObjects\DateString;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -12,11 +17,27 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
+        /** @var User $user */
+        $user = User::query()->firstOrCreate([
+            'email' => 'd4vid81@gmail.com',
+        ], [
+            'name' => 'David Schneider',
+            'password' => bcrypt(Str::random()),
+            'email_verified_at' => Carbon::now(),
+        ]);
 
-        // \App\Models\User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        /** @var GetOrCreateReportForUser $action */
+        $action = app()->make(GetOrCreateReportForUser::class);
+
+        for ($x = 0; $x < 14; $x++) {
+            $action->execute(
+                new GetOrCreateReport(
+                    $user,
+                    DateString::fromCarbon(
+                        Carbon::now()->subDays($x)
+                    )
+                )
+            );
+        }
     }
 }
